@@ -53,19 +53,59 @@ const updatePlayer = (req: express.Request, res: express.Response) => {
     gold: req.body.gold
   }
   //if (playerData && req.body.id === req.params.id) {  // confirm user
-    db.collection('profiles').doc(`${req.params.id}`)
-      .update({
-        lvl: req.body.lvl,
-        xp: req.body.xp,
-        gold: req.body.gold
-      })
-      .then(() => {
-        res.json(playerData)
-      })
-      .catch((err) => res.status(500).json({ error: err.code }))
+  db.collection('profiles').doc(`${req.params.id}`)
+    .update({
+      lvl: req.body.lvl,
+      xp: req.body.xp,
+      gold: req.body.gold
+    })
+    .then(() => {
+      res.json(playerData)
+    })
+    .catch((err) => res.status(500).json({ error: err.code }))
   //}
   //res.status(400).json({ message: 'Inadequate data submitted' })
 }
 
 app.get('/profile/:id', getPlayer)
 app.post('/profile/:id', updatePlayer)
+
+// MONSTERS
+const getAllMonsters = (req: express.Request, res: express.Response) => {
+  return db.collection('monsters')
+    .get()
+    .then((snapshot) => {
+      let monsters: Array<Object> = []
+      snapshot.forEach(doc => {
+        monsters.push({
+          id: doc.data().id,
+          name: doc.data().name,
+          baseDamage: doc.data().baseDamage,
+          baseHealth: doc.data().baseHealth
+        })
+      })
+      res.json(monsters)
+    })
+}
+const getRandomMonster = (req: express.Request, res: express.Response) => {
+  // takes in lvl (or not?)
+
+  // figure out # of monsters, return random
+  db.collection('monsters')
+    .get()
+    .then(snapshot => {
+      const numMonsters = snapshot.size
+      const randomIndex = Math.floor(Math.random() * numMonsters)
+      return snapshot.docs[randomIndex].data()
+    })
+    .then(data => {
+      res.json(data)
+    })
+    .catch(err => {
+      console.error(err)
+      res.status(400).json({ monsters: 'Could not get' })
+    })
+}
+
+app.get('/monsters', getAllMonsters)
+app.get('/monster', getRandomMonster)
