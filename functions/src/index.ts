@@ -1,13 +1,17 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as cors from 'cors'
 import * as express from 'express'
+const app = express()
+import * as cors from 'cors'
+const corsHandler = cors({
+  origin: true
+})
+app.use(corsHandler)
+// 1 line cors: // @ts-ignore //tslint:disable-next-line:no-empty
+// corsHandler(req, res, async () => { })
 
 admin.initializeApp()
 const db = admin.firestore()
-
-const app = express()
-app.use(cors())
 
 exports.api = functions.https.onRequest(app)
 
@@ -75,7 +79,7 @@ const getAllMonsters = (req: express.Request, res: express.Response) => {
   return db.collection('monsters')
     .get()
     .then((snapshot) => {
-      let monsters: Array<Object> = []
+      const monsters: Array<Object> = []
       snapshot.forEach(doc => {
         monsters.push({
           id: doc.data().id,
@@ -106,9 +110,13 @@ const getRandomMonster = (req: express.Request, res: express.Response) => {
       res.status(400).json({ monsters: 'Could not get' })
     })
 }
+//const getSpecificMonster = (req: express.Request, res: express.Response) => {
+//  do stuff
+//}
 
 app.get('/monsters', getAllMonsters)
 app.get('/monster', getRandomMonster)
+//app.get('/monster/:name', getSpecificMonster)
 
 // FORMULAS
 // note: probably better off as a cloud trigger rather than cloud function, to keep hidden from players
