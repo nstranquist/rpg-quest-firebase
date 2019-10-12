@@ -109,3 +109,24 @@ const getRandomMonster = (req: express.Request, res: express.Response) => {
 
 app.get('/monsters', getAllMonsters)
 app.get('/monster', getRandomMonster)
+
+// FORMULAS
+// note: probably better off as a cloud trigger rather than cloud function, to keep hidden from players
+// for now, who cares, it's just a linear model ;)
+const getAllFormulas = (req: express.Request, res: express.Response) => {
+  db.collection('formulas')
+    .get()
+    .then(snapshot => {
+      const results: Array<any> = []
+      snapshot.forEach(doc => {
+        results.push(doc.data())
+      })
+      res.json(results)
+    })
+    .catch(err => {
+      console.error(err)
+      res.status(500).json({ message: 'Something went wrong' })
+    })
+}
+
+app.get('/formulas', getAllFormulas)
