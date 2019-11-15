@@ -27,11 +27,41 @@ interface Player {
 //interface RPG {}
 //interface Formulas {}
 
+// listen for xp changes. 100xp per level (linear model for now)
+exports.updateLevel = functions.firestore
+  .document('profiles/{userId}')
+  .onUpdate((change, context) => {
+    // get values for xp and level from before and after write
+    const oldData = change.before.data()
+    const oldXp = oldData!.xp
+    if(oldXp >= (100 - 15)) {  // (XpTilNextLvl - XpFromMonster)
+      const oldLevel = oldData!.level
+      const newData = change.after.data()
+      const newXp = newData!.xp
+      // compare the old and new values against xp formula, update if needed
+      if (newXp >= 100 && (newXp - oldXp) < 100) {  // 2nd check is to prevent cheating
+        // for implementing an increased leveling system, can assign variable 'nextLevelXp', and increase it here at each level up
+        // upgrade level, reset xp
+        let diffXp = newXp - 100
+        db.doc(`profiles/${context.params.userId}`)
+          .update({
+            level: oldLevel + 1,
+            xp: diffXp  // allows extra xp to carry over for the next level
+          })
+          .then((writeResult) => {
+            // can make other checks, updates, and changes here (i.e. if there are multiple documents)
+            // good idea would be to put xp in its own subcollection, to minimize number of updates... not 100% sure though
+          })
+          .catch(err => console.log(err))
+      }
+    }
+  })
+
 const getPlayer = (req: express.Request, res: express.Response) => {
   // check auth (req.params.auth?), or do it below after getting collection
 
   // get player data from document in /profiles collection
-  db.collection('profiles').doc(`${req.params.id}`)
+  db.doc(`profiles/${req.params.id}`)
     .get()
     .then((doc) => {
       if (!doc.exists)
@@ -57,15 +87,13 @@ const updatePlayer = (req: express.Request, res: express.Response) => {
     gold: req.body.gold
   }
   //if (playerData && req.body.id === req.params.id) {  // confirm user
-  db.collection('profiles').doc(`${req.params.id}`)
+  db.doc(`profiles/${req.params.id}`)
     .update({
       lvl: req.body.lvl,
       xp: req.body.xp,
       gold: req.body.gold
     })
-    .then(() => {
-      res.json(playerData)
-    })
+    .then(() => res.json(playerData))
     .catch((err) => res.status(500).json({ error: err.code }))
   //}
   //res.status(400).json({ message: 'Inadequate data submitted' })
@@ -90,7 +118,9 @@ const getAllMonsters = (req: express.Request, res: express.Response) => {
       })
       res.json(monsters)
     })
+    .catch(err => console.log(err))
 }
+
 const getRandomMonster = (req: express.Request, res: express.Response) => {
   // takes in lvl (or not?)
 
